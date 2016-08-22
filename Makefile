@@ -1,6 +1,6 @@
 CC=gcc
 
-OBJS=pipe.c pipe_test.c pipe_util.c
+OBJS=pipe.c pipe_test.c 
 NAME=pipe
 
 CFLAGS=-Wall -Wextra -Wpointer-arith -fstrict-aliasing -std=c99 -DFORTIFY_SOURCE=2 -pipe -pedantic #-Werror
@@ -13,39 +13,18 @@ ifeq (,$(findstring mingw,$(target)))
 	CFLAGS += -pthread
 endif
 
-all: pipe_debug pipe_release thread_ring_debug thread_ring_release
+all: pipe_test 
 
-pipe_debug: $(OBJS) main.c
-	$(CC) $(CFLAGS)  $(D_CFLAGS) -o pipe_debug $(OBJS) main.c
-
-pipe_release: $(OBJS) main.c
-	$(CC) $(CFLAGS)  $(R_CFLAGS) -o pipe_release $(OBJS) main.c
-
-thread_ring_debug: $(OBJS) thread_ring.c
-	$(CC) $(CFLAGS)  $(D_FLAGS) -o thread_ring_debug $(OBJS) thread_ring.c
-
-thread_ring_release: $(OBJS) thread_ring.c
-	$(CC) $(CFLAGS)  $(R_FLAGS) -o thread_ring_release $(OBJS) thread_ring.c
+pipe_test: $(OBJS) pipe_test.c
+	$(CC) $(CFLAGS)  $(D_CFLAGS) -o pipe_test $(OBJS)
 
 pipe.h:
 
-main.c: pipe.h
-	
 pipe.c: pipe.h
 
-pipe_test.c: pipe.h pipe_util.h
+pipe_test.c: pipe.h 
 
-pipe_util.c: pipe.h pipe_util.h
-
-.PHONY : clean analyze
-
-analyze: $(OBJS) pipe_debug pipe_release
-	clang --analyze $(CFLAGS) $(OBJS)
-	valgrind ./pipe_debug
-	valgrind ./pipe_release
-	valgrind --tool=callgrind --dump-instr=yes --trace-jump=yes ./pipe_release
-	valgrind --tool=cachegrind ./pipe_release
-	valgrind --tool=massif ./pipe_release
+.PHONY : clean 
 
 clean:
-	rm -f *.plist pipe_debug pipe_release
+	rm -f pipe_test
