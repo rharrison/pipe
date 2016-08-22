@@ -1,4 +1,4 @@
-
+#include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -11,7 +11,14 @@
 typedef struct {
     pipe_consumer_t* c;
     int parent_status;
+    int telem_count;
 } thread_context_t;
+
+typedef struct {
+    short int  Channel;
+    char Telemetry [257];
+} telemetry_t;
+
 
 void hexdump_buffer (const char * title, const char * buffer, const int len_buffer)
 {
@@ -33,24 +40,19 @@ void *ProcessPayload ( void *context)
     thread_context_t *ctx;
     ctx = context;
 
-    char rx_packet [257];
+    telemetry_t t;
 
     size_t a_cnt =0;
-
-    printf("Thread\n");
 
     while (ctx->parent_status == RUNNING || a_cnt > 0)
     {
 
+	    a_cnt= pipe_pop(ctx->c, &t, 1);
 
-	    a_cnt= pipe_pop_eager(ctx->c, rx_packet,  sizeof(rx_packet)/sizeof(*(rx_packet)));
-
-        printf ("Size of rx_packet = %u\n",a_cnt);
-	
 	    if (a_cnt)
 	    {
-            // sleep(1);
-	        hexdump_buffer ("C",rx_packet,256);
+            sleep(10);
+	        hexdump_buffer ("C",t.Telemetry,256);
 	    }
 	    else
 	    {
@@ -65,22 +67,22 @@ void *ProcessPayload ( void *context)
 
 void send_data( pipe_producer_t * p){
 
-	char tx_packet [257];
+    telemetry_t t;
 
     char fileName_ssdv [20] = "ssdv.bin";
     FILE* file_ssdv = fopen(fileName_ssdv, "rb");
 
 	unsigned int i = 0;
 
-    printf ("Size of tx_packet = %u\n", sizeof(tx_packet)/sizeof(*(tx_packet)));
+    printf ("Size of tx_packet = %u\n", sizeof(t));
 
-    while (fread(tx_packet,256,1,file_ssdv) && (i < 10))
+    while (fread(t.Telemetry,256,1,file_ssdv) && (i < 10))
     {
-        sleep(1);
-	    tx_packet[256]='\0';
-        hexdump_buffer ("Producer",tx_packet,256);
+        //sleep(1);
+	    t.Telemetry[256]='\0';
+        hexdump_buffer ("Producer",t.Telemetry,256);
         
-        pipe_push(p, tx_packet,  sizeof(tx_packet)/sizeof(*(tx_packet)));
+        pipe_push(p, &t,  1);
     
 	    i++;
     }
@@ -92,7 +94,7 @@ void send_data( pipe_producer_t * p){
 int main (void)
 {
 
-    pipe_t* pipe = pipe_new(sizeof(char), 257000);
+    pipe_t* pipe = pipe_new(sizeof(telemetry_t), 256);
     pipe_producer_t* p = pipe_producer_new(pipe);
     pipe_consumer_t* c = pipe_consumer_new(pipe);
     pipe_free(pipe);
