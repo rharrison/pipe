@@ -51,7 +51,7 @@ void *ProcessPayload ( void *context)
 
 	    if (a_cnt)
 	    {
-            sleep(10);
+            sleep(1);
 	        hexdump_buffer ("C",t.Telemetry,256);
 	    }
 	    else
@@ -76,7 +76,7 @@ void send_data( pipe_producer_t * p){
 
     printf ("Size of tx_packet = %u\n", sizeof(t));
 
-    while (fread(t.Telemetry,256,1,file_ssdv) && (i < 10))
+    while (fread(t.Telemetry,256,1,file_ssdv) && (i < 100))
     {
         //sleep(1);
 	    t.Telemetry[256]='\0';
